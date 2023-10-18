@@ -25,7 +25,8 @@
 
 #include "utils.h"
 
-typedef enum log_level {
+typedef enum log_level
+{
     /* the value of the first 3 bits matches the syslog(3) levels */
     log_emerg = 0,
     log_alert = 1,
@@ -50,18 +51,14 @@ log_level log_get_filter_level(void);
 
 void log_set_options(log_level filter_level_new);
 
-__attribute__ ((format(printf, 2, 3)))
-void log_printf(log_level level, const char *format, ...);
+__attribute__((format(printf, 2, 3))) void log_printf(log_level level, const char *format, ...);
 
-__attribute__ ((format(printf, 3, 4), noreturn))
-void log_printf_exit(int status, log_level level, const char *format, ...);
+__attribute__((format(printf, 3, 4), noreturn)) void log_printf_exit(int status, log_level level, const char *format, ...);
 
-__attribute__ ((format(printf, 2, 3)))
-void log_printf_err(log_level level, const char *format, ...);
+__attribute__((format(printf, 2, 3))) void log_printf_err(log_level level, const char *format, ...);
 
-__attribute__ ((format(printf, 3, 4), noreturn))
-void log_printf_err_exit(int status, log_level level, const char *format, ...);
+__attribute__((format(printf, 3, 4), noreturn)) void log_printf_err_exit(int status, log_level level, const char *format, ...);
 
-#define err_sys(...)  log_printf_err_exit(1, log_err, __VA_ARGS__)
+#define err_sys(...) log_printf_err_exit(1, log_err, __VA_ARGS__)
 
-#endif				/* !__LOG_H__ */
+#endif /* !__LOG_H__ */

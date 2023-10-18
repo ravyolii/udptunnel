@@ -19,7 +19,14 @@
 #ifndef __NETWORK_H__
 #define __NETWORK_H__
 
-#define SET_MAX(fd) do { if (max < (fd) + 1) { max = (fd) + 1; } } while (0)
+#define SET_MAX(fd)         \
+    do                      \
+    {                       \
+        if (max < (fd) + 1) \
+        {                   \
+            max = (fd) + 1; \
+        }                   \
+    } while (0)
 
 char *print_addr_port(const struct sockaddr *addr, socklen_t addrlen);
 
