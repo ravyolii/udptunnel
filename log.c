@@ -24,6 +24,7 @@
 #include <string.h>
 #include <errno.h>
 #include <syslog.h>
+#include <time.h>
 
 #include "log.h"
 #include "utils.h"
@@ -36,12 +37,12 @@ static log_level filter_level = log_info;
 static FILE *file_for_level(log_level level)
 {
     if (level & log_stderr || filter_level & log_stderr)
-	return stderr;
+        return stderr;
 
     if ((level & LOG_LEVEL_MASK) > log_warning)
-	return stdout;
+        return stdout;
     else
-	return stderr;
+        return stderr;
 }
 
 static void log_doit(log_level level, const char *format, va_list args)
@@ -49,32 +50,51 @@ static void log_doit(log_level level, const char *format, va_list args)
     static int syslog_initialized;
 
     if ((level & LOG_LEVEL_MASK) > (filter_level & LOG_LEVEL_MASK))
-	return;
+        return;
 
-    if (level & log_syslog || filter_level & log_syslog) {
-	if (!syslog_initialized) {
-	    openlog(NULL, LOG_PID, LOG_DAEMON);
-	    syslog_initialized = 1;
-	}
+    if (level & log_syslog || filter_level & log_syslog)
+    {
+        if (!syslog_initialized)
+        {
+            openlog(NULL, LOG_PID, LOG_DAEMON);
+            syslog_initialized = 1;
+        }
 
-	if (level & log_strerror) {
-	    int len = strlen(format);
-	    char *format2;
+        if (level & log_strerror)
+        {
+            int len = strlen(format);
+            char *format2;
 
-	    format2 = NOFAIL(malloc(len + 4 + 1));
-	    strcpy(format2, format);
-	    strcpy(format2 + len, ": %m");
-	    vsyslog(level & LOG_LEVEL_MASK, format2, args);
-	    free(format2);
-	} else {
-	    vsyslog(level & LOG_LEVEL_MASK, format, args);
-	}
-	return;
+            format2 = NOFAIL(malloc(len + 4 + 1));
+            strcpy(format2, format);
+            strcpy(format2 + len, ": %m");
+            vsyslog(level & LOG_LEVEL_MASK, format2, args);
+            free(format2);
+        }
+        else
+        {
+            vsyslog(level & LOG_LEVEL_MASK, format, args);
+        }
+        return;
     }
+
+    time_t rawtime;
+    struct tm *timeinfo;
+
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    fprintf(file_for_level(level), "%04d-%02d-%02dT%02d:%02d:%02d ", 
+            timeinfo->tm_year+1900, 
+            timeinfo->tm_mon+1, 
+            timeinfo->tm_mday, 
+            timeinfo->tm_hour, 
+            timeinfo->tm_min, 
+            timeinfo->tm_sec);
 
     vfprintf(file_for_level(level), format, args);
     if (level & log_strerror)
-	fprintf(file_for_level(level), ": %s", strerror(errno));
+        fprintf(file_for_level(level), ": %s", strerror(errno));
     fprintf(file_for_level(level), "\n");
 }
 
@@ -127,4 +147,3 @@ void log_printf_err_exit(int status, log_level level, const char *format, ...)
 
     exit(status);
 }
-
