@@ -137,6 +137,8 @@ static void usage(int status)
 	exit(status);
 }
 
+static int verbose = 0;
+
 static void parse_args(int argc, char *argv[], struct opts *opts)
 {
 #ifdef HAVE_GETOPT_LONG
@@ -153,7 +155,6 @@ static void parse_args(int argc, char *argv[], struct opts *opts)
 #endif
 	int c;
 	int expected_args;
-	int verbose = 0;
 	int use_syslog = 0;
 
 	/* defaults */
@@ -289,10 +290,10 @@ static void udp_to_tcp(struct relay *relay)
      */
 	memcpy(&(relay->remote_udpaddr), &remote_udpaddr, addrlen);
 
-#ifdef DEBUG
-	log_printf(log_debug, "Received a %d bytes UDP packet from %s", buflen,
-			   print_addr_port((struct sockaddr *)&remote_udpaddr, addrlen));
-#endif
+	if (verbose >= 3) {
+		log_printf(log_debug, "Received a %d bytes UDP packet from %s", buflen,
+				print_addr_port((struct sockaddr *)&remote_udpaddr, addrlen));
+	}
 
 	p.length = htons(buflen);
 	if (send(relay->tcp_sock, &p, buflen + sizeof(p.length), 0) < 0)
@@ -382,10 +383,10 @@ static void tcp_to_udp(struct relay *relay)
 		else if (relay->state == reading_packet)
 		{
 			/* read an encapsulated packet and send it as UDP */
-#ifdef DEBUG
-			log_printf(log_debug, "Received a %u bytes TCP packet",
-					   relay->packet_length);
-#endif
+			if (verbose >= 3) {
+				log_printf(log_debug, "Received a %u bytes TCP packet",
+						relay->packet_length);
+			}
 
 			send_udp_packet(relay);
 

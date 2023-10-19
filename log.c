@@ -84,7 +84,9 @@ static void log_doit(log_level level, const char *format, va_list args)
     time(&rawtime);
     timeinfo = localtime(&rawtime);
 
-    fprintf(file_for_level(level), "%04d-%02d-%02dT%02d:%02d:%02d ", 
+    FILE* dest = file_for_level(level);
+
+    fprintf(dest, "%04d-%02d-%02dT%02d:%02d:%02d ", 
             timeinfo->tm_year+1900, 
             timeinfo->tm_mon+1, 
             timeinfo->tm_mday, 
@@ -92,10 +94,12 @@ static void log_doit(log_level level, const char *format, va_list args)
             timeinfo->tm_min, 
             timeinfo->tm_sec);
 
-    vfprintf(file_for_level(level), format, args);
+    vfprintf(dest, format, args);
     if (level & log_strerror)
-        fprintf(file_for_level(level), ": %s", strerror(errno));
-    fprintf(file_for_level(level), "\n");
+        fprintf(dest, ": %s", strerror(errno));
+    fprintf(dest, "\n");
+
+    fflush(dest);
 }
 
 log_level log_get_filter_level(void)
