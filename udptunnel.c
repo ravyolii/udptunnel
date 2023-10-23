@@ -93,6 +93,7 @@ struct opts
 	int use_inetd;
 	char *handshake;
 	int timeout;
+	int rtimeout;
 };
 
 struct relay
@@ -125,6 +126,7 @@ static void usage(int status)
 	fprintf(fp, "-i    --inetd          expect to be started by inetd\n");
 	fprintf(fp, "-T N  --timeout N      close the source connection after N seconds\n");
 	fprintf(fp, "                       where no data was received\n");
+	fprintf(fp, "-r    --rtimoeut       applies timeout on the receipient side\n");
 	fprintf(fp, "-S    --syslog         log to syslog instead of standard error\n");
 	fprintf(fp, "-v    --verbose        explain what is being done\n");
 	fprintf(fp, "-h    --help           display this help and exit\n");
@@ -147,6 +149,7 @@ static void parse_args(int argc, char *argv[], struct opts *opts)
 		{"server", no_argument, NULL, 's'},
 		{"syslog", no_argument, NULL, 'S'},
 		{"timeout", required_argument, NULL, 'T'},
+		{"rtimeout", no_argument, NULL, 'r'},
 		{"help", no_argument, NULL, 'h'},
 		{"verbose", no_argument, NULL, 'v'},
 		{NULL, 0, NULL, 0},
@@ -161,7 +164,7 @@ static void parse_args(int argc, char *argv[], struct opts *opts)
 	opts->handshake = NOFAIL(malloc(32));
 	memcpy(opts->handshake, "udptunnel by md.\0\0\0\x01\x03\x06\x10\x15\x21\x28\x36\x45\x55\x66\x78\x91", 32);
 
-	while ((c = GETOPT_LONGISH(argc, argv, "ihsvST:",
+	while ((c = GETOPT_LONGISH(argc, argv, "ihsvSrT:",
 							   longopts, &longindex)) > 0)
 	{
 		switch (c)
@@ -177,6 +180,9 @@ static void parse_args(int argc, char *argv[], struct opts *opts)
 			break;
 		case 'T':
 			opts->timeout = atol(optarg);
+			break;
+		case 'r':
+			opts->rtimeout = 1;
 			break;
 		case 'v':
 			verbose++;
@@ -232,6 +238,8 @@ static void parse_args(int argc, char *argv[], struct opts *opts)
 		log_set_options(log_get_filter_level() | log_syslog);
 
 	log_printf(log_info, "verbose level %d", verbose);
+	log_printf(log_info, "timeout set to %d", opts->timeout);
+	log_printf(log_info, "Recipient timeout set to %d", opts->rtimeout);
 }
 
 int udp_listener_sa(const int num)
@@ -539,8 +547,12 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		if (opts.timeout)
+		if (opts.timeout) {
 			relay.udp_timeout = opts.timeout;
+			if (opts.rtimeout) {
+				relay.tcp_timeout = opts.timeout;
+			}
+		}
 
 		if (opts.use_inetd)
 		{
